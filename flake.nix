@@ -87,13 +87,13 @@
                             (
                               if hostConfig.config.lollypops.deployment.local-evaluation then
                                 ''
-                                  nixos-rebuild {{.REBUILD_ACTION}} --flake '{{.REMOTE_CONFIG_DIR}}#{{.HOSTNAME}}' \
+                                  ${pkgs.nixos-rebuild}/bin/nixos-rebuild {{.REBUILD_ACTION}} --use-remote-sudo --flake '{{.LOCAL_FLAKE_SOURCE}}#{{.HOSTNAME}}' \
                                     --target-host {{.REMOTE_USER}}@{{.REMOTE_HOST}} \
-                                    --build-host root@{{.REMOTE_HOST}}
+                                    --build-host {{.REMOTE_USER}}@{{.REMOTE_HOST}}
                                 ''
                               else
                                 ''
-                                  ssh {{.REMOTE_USER}}@{{.REMOTE_HOST}} "nixos-rebuild {{.REBUILD_ACTION}} --flake '{{.REMOTE_CONFIG_DIR}}#{{.HOSTNAME}}'"
+                                  ssh {{.REMOTE_USER}}@{{.REMOTE_HOST}} "nixos-rebuild {{.REBUILD_ACTION}} --use-remote-sudo --flake '{{.REMOTE_CONFIG_DIR}}#{{.HOSTNAME}}'"
                                 ''
                             )
                           ];
@@ -109,9 +109,12 @@
                               if test -d "$source_path"; then
                                 source_path=$source_path/
                               fi
+
+                              ssh {{.REMOTE_USER}}@{{.REMOTE_HOST}} '$(which sudo) mkdir -p {{.REMOTE_CONFIG_DIR}}'
+
                               ${pkgs.rsync}/bin/rsync \
                               --verbose \
-                              -e ssh\ -l\ {{.REMOTE_USER}}\ -T \
+                              --rsync-path='$(which sudo) rsync' \
                               -FD \
                               --times \
                               --perms \
